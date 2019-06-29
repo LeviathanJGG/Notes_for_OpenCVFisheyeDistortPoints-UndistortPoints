@@ -87,10 +87,14 @@ void cv::fisheye::undistortPoints( InputArray distorted, OutputArray undistorted
     CV_Assert(distorted.type() == CV_32FC2 || distorted.type() == CV_64FC2);
     undistorted.create(distorted.size(), distorted.type());
 
+    //jgg: we generally use the InputArray K as the new matrix to get the correct points
     CV_Assert(P.empty() || P.size() == Size(3, 3) || P.size() == Size(4, 3));
+    //jgg: we generally use noArray()
     CV_Assert(R.empty() || R.size() == Size(3, 3) || R.total() * R.channels() == 3);
+    //jgg: distortion coefficient
     CV_Assert(D.total() == 4 && K.size() == Size(3, 3) && (K.depth() == CV_32F || K.depth() == CV_64F));
 
+    //jgg: the focal length fx & fy, and cx & cy
     cv::Vec2d f, c;
     if (K.depth() == CV_32F)
     {
@@ -105,8 +109,10 @@ void cv::fisheye::undistortPoints( InputArray distorted, OutputArray undistorted
         c = Vec2d(camMat(0, 2), camMat(1, 2));
     }
 
+    //jgg: k is the distortion coefficient
     Vec4d k = D.depth() == CV_32F ? (Vec4d)*D.getMat().ptr<Vec4f>(): *D.getMat().ptr<Vec4d>();
 
+    //jgg: we generally use noArray(), so jump to the "else"
     cv::Matx33d RR = cv::Matx33d::eye();
     if (!R.empty() && R.total() * R.channels() == 3)
     {
@@ -114,9 +120,11 @@ void cv::fisheye::undistortPoints( InputArray distorted, OutputArray undistorted
         R.getMat().convertTo(rvec, CV_64F);
         RR = cv::Affine3d(rvec).rotation();
     }
+    //jgg: convertTo just want to change it into the right type
     else if (!R.empty() && R.size() == Size(3, 3))
         R.getMat().convertTo(RR, CV_64F);
 
+    //jgg: convertTo just want to change it into the right type, and colRange(0, 3) can choose the first 3 cols for that P may be 3*4
     if(!P.empty())
     {
         cv::Matx33d PP;
