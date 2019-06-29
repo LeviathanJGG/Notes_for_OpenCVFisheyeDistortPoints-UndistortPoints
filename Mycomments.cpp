@@ -8,6 +8,7 @@ void cv::fisheye::distortPoints(InputArray undistorted, OutputArray distorted, I
     // will support only 2-channel data now for points
     CV_Assert(undistorted.type() == CV_32FC2 || undistorted.type() == CV_64FC2);
     distorted.create(undistorted.size(), undistorted.type());
+    //jgg: the number of InputArray
     size_t n = undistorted.total();
 
     //jgg: it only works when all conditions are met, otherwise there's a assert.
@@ -28,8 +29,10 @@ void cv::fisheye::distortPoints(InputArray undistorted, OutputArray distorted, I
         c = Vec2d(camMat(0 ,2), camMat(1, 2));
     }
 
+    //jgg: k is the distortion coefficient
     Vec4d k = D.depth() == CV_32F ? (Vec4d)*D.getMat().ptr<Vec4f>(): *D.getMat().ptr<Vec4d>();
 
+    //jgg: the src point & the dst point
     const Vec2f* Xf = undistorted.getMat().ptr<Vec2f>();
     const Vec2d* Xd = undistorted.getMat().ptr<Vec2d>();
     Vec2f *xpf = distorted.getMat().ptr<Vec2f>();
@@ -37,11 +40,16 @@ void cv::fisheye::distortPoints(InputArray undistorted, OutputArray distorted, I
 
     for(size_t i = 0; i < n; ++i)
     {
+        //jgg： get the src point
         Vec2d x = undistorted.depth() == CV_32F ? (Vec2d)Xf[i] : Xd[i];
 
+        //jgg: x与x的点乘，开完根号即x的模
         double r2 = x.dot(x);
         double r = std::sqrt(r2);
 
+        /*jgg: 镜头畸变相关，暂时不管，后面的thetam都是theta的m次方，这一块的公式具体可参考
+        https://docs.opencv.org/master/db/d58/group__calib3d__fisheye.html中的Detailed Description部分
+        */
         // Angle of the incoming ray:
         double theta = atan(r);
 
@@ -50,11 +58,15 @@ void cv::fisheye::distortPoints(InputArray undistorted, OutputArray distorted, I
 
         double theta_d = theta + k[0]*theta3 + k[1]*theta5 + k[2]*theta7 + k[3]*theta9;
 
+        //jgg: calculate the  theta_d/r
         double inv_r = r > 1e-8 ? 1.0/r : 1;
         double cdist = r > 1e-8 ? theta_d * inv_r : 1;
 
+        //jgg: calculate the  x'
         Vec2d xd1 = x * cdist;
+        //jgg: calculate the  x'+alpha*y'
         Vec2d xd3(xd1[0] + alpha*xd1[1], xd1[1]);
+        //jgg: calculate the  (u,v)
         Vec2d final_point(xd3[0] * f[0] + c[0], xd3[1] * f[1] + c[1]);
 
         if (undistorted.depth() == CV_32F)
