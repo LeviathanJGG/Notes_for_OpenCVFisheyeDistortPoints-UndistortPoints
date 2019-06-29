@@ -10,8 +10,10 @@ void cv::fisheye::distortPoints(InputArray undistorted, OutputArray distorted, I
     distorted.create(undistorted.size(), undistorted.type());
     size_t n = undistorted.total();
 
+    //jgg: it only works when all conditions are met, otherwise there's a assert.
     CV_Assert(K.size() == Size(3,3) && (K.type() == CV_32F || K.type() == CV_64F) && D.total() == 4);
 
+    //jgg: the focal length fx & fy, and cx & cy
     cv::Vec2d f, c;
     if (K.depth() == CV_32F)
     {
